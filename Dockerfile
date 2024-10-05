@@ -1,23 +1,21 @@
 FROM centos
+MAINTAINER nilesh@gmail.com
 
-MAINTAINER vikash@gmail.com
+# Install dependencies, including AWS CLI
+RUN yum -y install zip unzip httpd \
+    && yum install -y awscli
 
-# Update YUM repo configurations and install necessary packages
-RUN sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS-* && \
-    sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-* && \
-    yum clean all && \
-    yum -y install java httpd zip unzip && \
-    yum clean all
+# Copy the file from the S3 bucket to the container's /var/www/html/ directory
+RUN aws s3 cp s3://mys3-02/s3-upload/photogenic.zip /var/www/html/
 
-# Download and extract the template to the correct directory
-ADD https://www.free-css.com/assets/files/free-css-templates/download/page254/photogenic.zip /var/www/html/
+# Unzip the file and clean up
 WORKDIR /var/www/html/
-RUN unzip -q photogenic.zip && \
-    cp -rvf photogenic/* . && \
-    rm -rf photogenic photogenic.zip
+RUN unzip photogenic.zip \
+    && cp -rvf photogenic/* . \
+    && rm -rf photogenic photogenic.zip
 
-# Start Apache HTTPD in the foreground
+# Start Apache server
 CMD ["/usr/sbin/httpd", "-D", "FOREGROUND"]
 
-# Expose ports 80 (HTTP) and 22 (SSH)
-EXPOSE 80 22
+# Expose ports
+EXPOSE 80
